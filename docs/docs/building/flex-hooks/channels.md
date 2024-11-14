@@ -66,6 +66,7 @@ export const channelHook = function overrideCallChannelToUseCustomerAttribute(
     TaskListItem: {
       ...flex.DefaultTaskChannels.Call.templates?.TaskListItem,
       firstLine: (task: Flex.ITask) => `(${task.attributes.customer}) ${task.defaultFrom}`,
+      
     },
     TaskCanvasHeader: {
       ...flex.DefaultTaskChannels.Call.templates?.TaskCanvasHeader,

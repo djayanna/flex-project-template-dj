@@ -1,6 +1,7 @@
 import React from "react";
 import * as Video from "twilio-video";
-import { Box, Flex } from "@twilio-paste/core";
+import { Box, Flex, Stack } from "@twilio-paste/core";
+
 
 import Participant from "../Participant/Participant";
 import ParticipantList from "../ParticipantList/ParticipantList";
