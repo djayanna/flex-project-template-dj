@@ -1,6 +1,4 @@
-import { Manager } from '@twilio/flex-ui';
-
-import { getFeatureFlags } from '../../utils/configuration';
+import { getFeatureFlags, getFlexFeatureFlag } from '../../utils/configuration';
 import DispositionsConfig, { CustomAttribute, WrapUpConfig, SelectAttribute } from './types/ServiceConfiguration';
 
 const {
@@ -15,8 +13,7 @@ const {
   per_queue = {},
 } = (getFeatureFlags()?.features?.dispositions as DispositionsConfig) || {};
 
-const nativeWrapupEnabled =
-  Manager.getInstance().store.getState().flex.featureFlags.features['ai-conversation-wrapup-notes']?.enabled === true;
+const nativeWrapupEnabled = getFlexFeatureFlag('ai-conversation-wrapup-notes');
 
 export const isFeatureEnabled = () => {
   return enabled;
@@ -54,7 +51,7 @@ export const isRequireDispositionEnabledForQueue = (queueSid: string, queueName:
 export const getDispositionsForQueue = (queueSid: string, queueName: string): string[] => {
   if (!isFeatureEnabled()) return [];
 
-  let dispositions = [...global.dispositions];
+  let dispositions = global?.dispositions ? [...global.dispositions] : [];
 
   if (queueSid && per_queue[queueSid] && per_queue[queueSid].dispositions) {
     dispositions = [...dispositions, ...per_queue[queueSid].dispositions];
@@ -66,7 +63,7 @@ export const getDispositionsForQueue = (queueSid: string, queueName: string): st
 };
 
 export const getTextAttributes = (queueSid: string, queueName: string): CustomAttribute[] => {
-  let text_attributes = [...global.text_attributes];
+  let text_attributes = global?.text_attributes ? [...global.text_attributes] : [];
   if (queueSid && per_queue[queueSid] && per_queue[queueSid].text_attributes) {
     text_attributes = [...text_attributes, ...per_queue[queueSid].text_attributes];
   } else if (queueName && per_queue[queueName] && per_queue[queueName].text_attributes) {
@@ -76,7 +73,7 @@ export const getTextAttributes = (queueSid: string, queueName: string): CustomAt
 };
 
 export const getSelectAttributes = (queueSid: string, queueName: string): SelectAttribute[] => {
-  let select_attributes = [...global.select_attributes];
+  let select_attributes = global?.select_attributes ? [...global.select_attributes] : [];
   if (queueSid && per_queue[queueSid] && per_queue[queueSid].select_attributes) {
     select_attributes = [...select_attributes, ...per_queue[queueSid].select_attributes];
   } else if (queueName && per_queue[queueName] && per_queue[queueName].select_attributes) {

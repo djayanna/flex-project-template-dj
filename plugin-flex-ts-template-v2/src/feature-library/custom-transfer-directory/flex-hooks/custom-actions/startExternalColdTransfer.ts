@@ -1,9 +1,10 @@
-import { Actions, ITask, Notifications, TaskHelper } from '@twilio/flex-ui';
+import { Actions, ITask, Notifications, TaskHelper, templates } from '@twilio/flex-ui';
 
 import { shouldSkipPhoneNumberValidation } from '../../config';
 import PhoneNumberService from '../../../../utils/serverless/PhoneNumbers/PhoneNumberService';
 import ProgrammableVoiceService from '../../../../utils/serverless/ProgrammableVoice/ProgrammableVoiceService';
 import { CustomTransferDirectoryNotification } from '../notifications/CustomTransferDirectory';
+import { StringTemplates } from '../strings/CustomTransferDirectory';
 import logger from '../../../../utils/logger';
 
 export const registerStartExternalColdTransfer = async () => {
@@ -29,8 +30,15 @@ export const registerStartExternalColdTransfer = async () => {
         if (!validationCheck.success) {
           Notifications.showNotification(CustomTransferDirectoryNotification.PhoneNumberFailedValidationCheckRequest);
           return;
-        } else if (validationCheck.success && !validationCheck.lookupResponse?.valid) {
-          const errors = validationCheck.lookupResponse.validationErrors.join(', ');
+        } else if (validationCheck.success && !validationCheck.valid) {
+          let errors = validationCheck.invalidReason;
+
+          errors = errors?.replace('COUNTRY_DISABLED', templates[StringTemplates.CountryDisabled]());
+          errors = errors?.replace(
+            'HIGH_RISK_SPECIAL_NUMBER_DISABLED',
+            templates[StringTemplates.HighRiskSpecialNumberDisabled](),
+          );
+
           Notifications.showNotification(
             CustomTransferDirectoryNotification.PhoneNumberFailedValidationCheckWithErrors,
             {
@@ -44,7 +52,7 @@ export const registerStartExternalColdTransfer = async () => {
 
       try {
         await ProgrammableVoiceService.startColdTransfer(
-          task?.attributes?.call_sid ?? task.attributes.conference.participants.customer,
+          task?.attributes?.conference?.participants?.customer ?? task?.attributes?.call_sid,
           phoneNumber,
           callerId,
         );

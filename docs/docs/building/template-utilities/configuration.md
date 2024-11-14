@@ -23,6 +23,53 @@ When running Flex locally, the configuration from [hosted Flex configuration](ht
 The `appConfig.js` file is created for you as part of the initial local environment setup script, which executes when running `npm install` in the root template directory. The file is automatically populated with the feature config from the `flex-config/ui_attributes.common.json` file at the time of creation, as long as the file does not already exist.
 :::
 
+### Reading configuration within Flex
+
+Several helper functions are available for reading configuration, and can be imported from `plugin-flex-ts-template-v2/src/utils/configuration/index.ts`. The exported functions from this file are as follows:
+
+- `getFeatureFlagsGlobal`: Fetches the `custom_data` object from the [hosted Flex configuration](https://www.twilio.com/docs/flex/developer/config/flex-configuration-rest-api#ui_attributes), providing all of the global feature configuration and global common configuration for the template. If running locally, any values contained within `plugin-flex-ts-template-v2/public/appConfig.js` will also be returned, overriding the corresponding hosted Flex configuration values.
+
+- `getFeatureFlagsUser`: Fetches the `config_overrides` object from the current worker's attributes. This object contains any configuration values that were set on the worker level, overriding the corresponding global configuration values.
+
+- `getFeatureFlags`: Returns the complete effective configuration. **This is the function you should use in most cases when determining a configuration value.** For each configuration value, the value returned will be as follows:
+  - If a override has been configured on the worker, that will be returned.
+  - If no worker override has been configured, and the plugin is running locally, and the value is configured in `appConfig.js`, the value from `appConfig.js` will be returned.
+  - Otherwise, the hosted Flex configuration value will be returned.
+
+- `getUserLanguage`: Returns the currently configured language, using the same order of precedence as `getFeatureFlags`. If the configured value is `default`, the browser's language will be returned. Otherwise, if no value is configured, `en-US` will be returned.
+
+- `getFlexFeatureFlag`: Returns the effective enablement state of the provided feature flag name.
+
+- `getLoadedFeatures`: Allows you to query for enabled loaded features at runtime. See [checking for enabled features](#checking-for-enabled-features).
+
+- `validateUiVersion`: Returns whether or not the current Flex UI version intersects the provided [semver range](https://github.com/npm/node-semver?tab=readme-ov-file#ranges). Use this to conditionally perform logic based on the running Flex UI version.
+
+#### Checking for enabled features
+
+When developing your feature, it may be beneficial to know which other features are enabled so that your feature can robustly handle all scenarios. For example, the `pause-recording` feature may wish to know if the `dual-channel-recording` feature is enabled, in order to determine what recording object to pause. While you can check the loaded configuration for which features are enabled, this does not necessarily reflect which features are actually loaded--for example, if a feature was removed from the codebase but not from the configuration. Therefore, a bespoke utility has been created for this purpose.
+
+The configuration utility in the template plugin (located at `plugin-flex-ts-template-v2/src/utils/configuration/index.ts`) allows you to query for enabled loaded features at runtime by calling the exported `getLoadedFeatures()` function.
+
+Example usage within a feature:
+
+```typescript
+import { getLoadedFeatures } from '../../utils/configuration';
+
+const isDualChannelEnabled = () => {
+  return getLoadedFeatures().includes('dual-channel-recording');
+};
+```
+
+:::danger Usage warning
+If `getLoadedFeatures()` is accessed before all features have loaded, it will return an empty array, along with the following console log:
+
+```
+Caution! getLoadedFeatures() was called before all features were loaded, so none will be returned.
+```
+
+When using this function, be sure to call it only after all features have loaded, and validate that the above error message does not appear within your browser's JavaScript console.
+:::
+
 ### Configuration management
 
 #### The `custom_data` object
@@ -270,8 +317,7 @@ The setup script, by default, will automatically perform its steps for the follo
 - flex-config
 - plugin-flex-ts-template-v2
 - serverless-functions
-- serverless-schedule-manager
-- web-app-examples/twilio-video-demo-app
+- addons
 
 However, you can specify the relative path to any npm package(s) for the script to process, such as if you have added your own packages to the template, or if you want to save time in CI scripts. You can provide a comma-separated list of packages as follows:
 
